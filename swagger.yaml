@@ -1,0 +1,109 @@
+swagger: "2.0"
+info:
+  version: "0.0.1"
+  title: Simple Chat app
+# during dev, should point to your local machine
+host: localhost:3000
+# basePath prefixes all resource paths 
+basePath: /
+# 
+schemes:
+  # tip: remove http to make production-grade
+  - http
+  - https
+# format of bodies a client can send (Content-Type)
+consumes:
+  - application/json
+# format of the responses to the client (Accepts)
+produces:
+  - application/json
+paths:
+  /join:
+    post:
+      description: join new user
+      parameters:
+        - name: user
+          description: new user payload
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/User"
+      responses:
+        201:
+          description: OK
+          schema:
+            $ref: "#/definitions/JoinedUser"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/GeneralError"
+  /send:
+    post:
+      description: send message
+      parameters:
+      - name: message
+        description: message payload
+        in: body
+        required: true
+        schema:
+          $ref: "#/definitions/Message"
+      responses:
+        200:
+          description: OK
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/GeneralError"
+  /swagger:
+    x-swagger-pipe: swagger_raw
+# complex objects have schema definitions
+definitions:
+  GeneralError:
+    type: object
+    properties:
+      error:
+        type: string
+    required:
+      - error
+  JoinedUser:
+    type: object
+    properties:
+      success:
+        type: boolean
+      message:
+        type: string
+      username:
+        type: string
+    required:
+      - success
+      - message
+      - username
+  User:
+    type: object
+    properties:
+      name:
+        type: string
+        description: name of user
+      username:
+        type: string
+        description: slug of name
+    required:
+      - name
+  Message:
+    type: object
+    properties:
+      from:
+        type: string
+        description: from user
+      to:
+        type: string
+        description: to user
+      message:
+        type: string
+        description: message text
+    required:
+      - from
+      - to
+      - message
+
+        
