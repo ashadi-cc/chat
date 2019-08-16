@@ -9,3 +9,12 @@ before_install:
 
 script:
   - go test -v ./...
+
+deploy:
+  provider: script
+  script: bash docker_push
+  on:
+    branch: master
+
+services:
+  - docker
