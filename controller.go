@@ -18,11 +18,11 @@ var (
 	//User list variable
 	Users   = make(UserJoined)
 	newUser = false
-	m       sync.Mutex
 )
 
 type Controller struct {
 	Sse *sse.Server
+	m   sync.Mutex
 }
 
 func (h *Controller) Join(w http.ResponseWriter, r *http.Request) {
@@ -44,18 +44,16 @@ func (h *Controller) Join(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//lock process
-	m.Lock()
+	h.m.Lock()
 	Users[user.Username] = user.Name
-	m.Unlock()
 
 	RespondJSON(w, http.StatusCreated, ResponseJoin{
 		Success:  true,
 		Message:  fmt.Sprintf("new user joined %s", user.Name),
 		Username: user.Username,
 	})
-
 	newUser = true
-
+	h.m.Unlock()
 }
 
 func (h *Controller) Send(w http.ResponseWriter, r *http.Request) {
@@ -85,16 +83,15 @@ func (h *Controller) WatchChannel() {
 	go func(s *sse.Server) {
 		for {
 			time.Sleep(1 * time.Second)
+			h.m.Lock()
 			if newUser {
 				sendMessage(s, "list", Users)
 				newUser = false
 			} else {
 				channels := s.Channels()
-				m.Lock()
 				newUser = CheckOnlineUser(channels)
-				m.Unlock()
 			}
-
+			h.m.Unlock()
 		}
 	}(h.Sse)
 }
