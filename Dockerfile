@@ -3,7 +3,7 @@ RUN apk update && apk upgrade && \
     apk add --no-cache bash git openssh
 WORKDIR /app
 COPY . /app
-RUN go build -o chat .
+RUN go build -o chat ./cmd/.
 
 FROM alpine:latest
 COPY --from=build /app/static /app/static

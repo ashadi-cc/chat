@@ -1,4 +1,4 @@
-package main
+package chat
 
 import (
 	"encoding/json"
@@ -12,23 +12,27 @@ import (
 	"github.com/gosimple/slug"
 )
 
+//UserJoined represent of users list
 type UserJoined map[string]string
 
-var (
-	//User list variable
-	Users   = make(UserJoined)
-	newUser = false
-)
-
+//Controller wrapper
 type Controller struct {
-	Sse *sse.Server
-	m   sync.Mutex
+	Sse     *sse.Server
+	m       sync.Mutex
+	newUser bool
+	Users   UserJoined
 }
 
+//create new instance of controller
 func newController(sse *sse.Server) *Controller {
-	return &Controller{Sse: sse}
+	return &Controller{
+		Sse:     sse,
+		newUser: false,
+		Users:   make(UserJoined),
+	}
 }
 
+//Join /join endpoint implementation
 func (h *Controller) Join(w http.ResponseWriter, r *http.Request) {
 	user := User{}
 	decoder := json.NewDecoder(r.Body)
@@ -42,24 +46,26 @@ func (h *Controller) Join(w http.ResponseWriter, r *http.Request) {
 	user.Username = slug.Make(user.Name)
 
 	//check existing username is exist
-	if _, ok := Users[user.Username]; ok {
+	if _, ok := h.Users[user.Username]; ok {
 		RespondError(w, http.StatusBadRequest, fmt.Sprintf("user %s already exist", user.Name))
 		return
 	}
 
 	//lock process
 	h.m.Lock()
-	Users[user.Username] = user.Name
+	h.Users[user.Username] = user.Name
 
 	RespondJSON(w, http.StatusCreated, ResponseJoin{
 		Success:  true,
 		Message:  fmt.Sprintf("new user joined %s", user.Name),
 		Username: user.Username,
 	})
-	newUser = true
+
+	h.newUser = true
 	h.m.Unlock()
 }
 
+//Send /send endpoint implementation
 func (h *Controller) Send(w http.ResponseWriter, r *http.Request) {
 	message := Message{}
 	decoder := json.NewDecoder(r.Body)
@@ -69,7 +75,7 @@ func (h *Controller) Send(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if _, ok := Users[message.To]; !ok {
+	if _, ok := h.Users[message.To]; !ok {
 		RespondError(w, http.StatusBadRequest, fmt.Sprintf("user not found :%s", message.To))
 		return
 	}
@@ -81,32 +87,32 @@ func (h *Controller) Send(w http.ResponseWriter, r *http.Request) {
 	RespondJSON(w, http.StatusOK, msg)
 }
 
-//WatchChannel watch online user
+// WatchChannel watch online user
 // and push to list channel when someone joined / leaved
 func (h *Controller) WatchChannel() {
 	go func(s *sse.Server) {
 		for {
 			time.Sleep(1 * time.Second)
 			h.m.Lock()
-			if newUser {
-				sendMessage(s, "list", Users)
-				newUser = false
+			if h.newUser {
+				sendMessage(s, "list", h.Users)
+				h.newUser = false
 			} else {
 				channels := s.Channels()
-				newUser = CheckOnlineUser(channels)
+				h.newUser = h.CheckOnlineUser(channels)
 			}
 			h.m.Unlock()
 		}
 	}(h.Sse)
 }
 
-func createTmpUser(channels []string) UserJoined {
+func (h *Controller) createTmpUser(channels []string) UserJoined {
 	tmpUsers := make(UserJoined)
 
 	for _, c := range channels {
 		if strings.HasPrefix(c, "/events/ping/") {
 			user := strings.TrimPrefix(c, "/events/ping/")
-			tmpUsers[user] = Users[user]
+			tmpUsers[user] = h.Users[user]
 		}
 	}
 
@@ -114,18 +120,18 @@ func createTmpUser(channels []string) UserJoined {
 }
 
 //CheckOnlineUser check for user leave
-func CheckOnlineUser(channels []string) bool {
-	tmpUsers := createTmpUser(channels)
+func (h *Controller) CheckOnlineUser(channels []string) bool {
+	tmpUsers := h.createTmpUser(channels)
 	isChanged := false
 
-	for key := range Users {
+	for key := range h.Users {
 		if _, ok := tmpUsers[key]; !ok {
 			isChanged = true
 		}
 	}
 
 	if isChanged {
-		Users = tmpUsers
+		h.Users = tmpUsers
 	}
 
 	return isChanged
