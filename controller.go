@@ -25,6 +25,10 @@ type Controller struct {
 	m   sync.Mutex
 }
 
+func newController(sse *sse.Server) *Controller {
+	return &Controller{Sse: sse}
+}
+
 func (h *Controller) Join(w http.ResponseWriter, r *http.Request) {
 	user := User{}
 	decoder := json.NewDecoder(r.Body)
