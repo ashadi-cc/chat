@@ -1,7 +1,14 @@
 language: go
 
 go:
-  - 1.12
+  - "1.12.x"
+
+# Enabling modules support
+env:
+  - GO111MODULE=on
+
+# persistent file installation
+install: true
 
 before_install:
   - cp .netrc ~/.netrc
