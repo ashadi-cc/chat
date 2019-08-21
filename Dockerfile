@@ -9,5 +9,5 @@ FROM alpine:latest
 COPY --from=build /app/static /app/static
 COPY --from=build /app/chat /app/chat
 WORKDIR /app
-CMD [ "./chat" ]
 EXPOSE 3000
+CMD [ "./chat" ]
