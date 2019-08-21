@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -51,9 +52,10 @@ func (a *App) setRouter() {
 	a.Controler.WatchChannel()
 	a.Router.HandleFunc("/join", a.Controler.Join).Methods("POST")
 	a.Router.HandleFunc("/send", a.Controler.Send).Methods("POST")
+	a.Router.HandleFunc("/", a.Controler.Index).Methods("GET")
 	a.Router.
 		PathPrefix(staticDir).
-		Handler(http.StripPrefix(staticDir, http.FileServer(http.Dir("."+staticDir))))
+		Handler(http.StripPrefix(staticDir, http.FileServer(http.Dir(fmt.Sprintf(".%s", staticDir)))))
 }
 
 //Init set initial process of app

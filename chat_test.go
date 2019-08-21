@@ -78,3 +78,12 @@ func TestSendMessage(t *testing.T) {
 		t.Fatalf("got error when sending message: %s", string(response.Body.Bytes()))
 	}
 }
+
+func TestIndexPage(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/", nil)
+	response := executeRequest(req)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("got error when sending message: %s", string(response.Body.Bytes()))
+	}
+}

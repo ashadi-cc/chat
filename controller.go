@@ -32,6 +32,17 @@ func newController(sse *sse.Server) *Controller {
 	}
 }
 
+//Index endpoint
+func (h *Controller) Index(w http.ResponseWriter, r *http.Request) {
+	b, err := loadIndexFile()
+	if err != nil {
+		RespondError(w, http.StatusInternalServerError, err.Error())
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(b)
+}
+
 //Join /join endpoint implementation
 func (h *Controller) Join(w http.ResponseWriter, r *http.Request) {
 	user := User{}

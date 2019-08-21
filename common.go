@@ -3,6 +3,7 @@ package chat
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/alexandrevicenzi/go-sse"
@@ -31,4 +32,9 @@ func sendMessage(s *sse.Server, path string, m interface{}) {
 	channel := fmt.Sprintf("/events/%s", path)
 	payload, _ := json.Marshal(m)
 	s.SendMessage(channel, sse.SimpleMessage(string(payload)))
+}
+
+func loadIndexFile() (b []byte, err error) {
+	b, err = ioutil.ReadFile("./static/index.html")
+	return b, err
 }
