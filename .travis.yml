@@ -11,8 +11,7 @@ env:
 install: true
 
 before_install:
-  - cp .netrc ~/.netrc
-  - chmod 600 ~/.netrc
+  - echo -e "machine github.com\n  login $CI_USER\n  password $CI_USER_PASSWORD" > ~/.netrc
 
 script:
   - go test -v ./...
